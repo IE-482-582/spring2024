@@ -15,3 +15,5 @@ Students need to complete these tasks before the 2nd class:
 4. Install software
     - See https://github.com/IE-482-582/spring2024/issues/6 
 --- 
+
+<img src="/images/class_qr_code.png" width="400">
