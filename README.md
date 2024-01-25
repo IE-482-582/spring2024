@@ -7,5 +7,5 @@ Students need to complete these tasks before the 2nd class:
 - Create GitHub account, using your **UB email address**:
     - Visit https://github.com/join
 - Install software
-    - **FIXME**
+    - See #6
 --- 
