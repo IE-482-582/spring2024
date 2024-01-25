@@ -12,8 +12,10 @@ Students need to complete these tasks before the 2nd class:
     Email: your_ub_email_address_goes_here
     GitHub Username: your_github_username_goes_here
     ``` 
-4. Install software
+3. Install software
     - See https://github.com/IE-482-582/spring2024/issues/6 
+4. Order the course textbook
+    - See the syllabus for details
 --- 
 
 <img src="/images/class_qr_code.png" width="400">
