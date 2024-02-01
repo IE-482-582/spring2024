@@ -185,5 +185,10 @@ if __name__ == "__main__":
 - ~~Read~~ Study textbook Chapter 2
 - Continue to scroll through the ROS tutorials website:  http://wiki.ros.org/ROS/Tutorials
     - You don't have to do any of the tutorials yet, just take a look at the materials.
+- Create a 1-page Linux "cheat sheet".
+    - You are strongly encouraged to find good examples online (be sure to give credit to those that inspire you)
+    - Please don't include ROS commands on your sheet.  We'll have a separate ROS cheat sheet later.
+    - Take a look in your previous commands to see some of those we've used this semester.  `pico ~/.bash_history`.
+ 
 
-
+---
