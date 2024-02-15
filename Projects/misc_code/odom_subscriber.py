@@ -27,15 +27,15 @@ class OdomReader():
 
 		p = msg.pose.pose
 
-		orientation_list = [p.orientation.x, p.orientation.y, p.orientation.z, -p.orientation.w]
+		orientation_list = [p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w]
 
 		(self.roll, self.pitch, self.yaw) = euler_from_quaternion(orientation_list)
 
 		self.yaw = self.yaw % TWO_PI
-		self.heading = round(np.rad2deg(self.yaw), 0) 
+		self.heading = round(np.rad2deg(self.yaw), 1) 
 		
-		self.pos_body_x_m  = round(-p.position.y, 3)		# True?
-		self.pos_body_y_m  = round( p.position.x, 3)		# True?
+		self.pos_body_x_m  = round( p.position.x, 3)		# True?
+		self.pos_body_y_m  = round( p.position.y, 3)		# True?
 		self.pos_body_z_m  = round( p.position.z, 3)		# True?
 		
 		self.vel_body_x_m_s = round(msg.twist.twist.linear.x, 2)    # True?
@@ -43,7 +43,7 @@ class OdomReader():
 		# The values published here might be aspirational (as opposed to actual).
 				
 		# print(self.roll, self.pitch, self.yaw)
-		print(self.heading)
+		print(self.pos_body_x_m, self.pos_body_y_m, self.pos_body_z_m, self.heading)
 			
 if __name__ == "__main__":
 	OdomReader()
