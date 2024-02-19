@@ -11,7 +11,7 @@ TWO_PI = 2*np.math.pi
 class OdomReader():
 	def __init__(self):
 	
-		rospy.init_node("odometry_reader")
+		rospy.init_node("odometry_reader", anonymous=True)
 	
 		rospy.Subscriber("/odometry/filtered", Odometry, self.callback_odometry)
 		
