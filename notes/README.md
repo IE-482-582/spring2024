@@ -192,3 +192,79 @@ if __name__ == "__main__":
  
 
 ---
+
+## 3 - Networking
+
+- Make sure your VM is setup for "bridged" network adapter.
+- Connect to the class Wi-Fi network, with password `ros4ever!`, from your **host** computer (not from your Ubuntu VM).
+- One computer in the network needs to be running `roscore`.  This computer is known as the "ROS master".  You will need to know its IP address.
+    - Once you know the IP address of the "ROS master", issue the following command in a Ubuntu terminal:
+        ```
+        export ROS_MASTER_URI="http://192.168.0.xxx:11311"
+        ```
+        - Replace `xxx` as appropriate
+
+    - To find **your** computer's IP address, issue this command from an Ubuntu terminal:  `ifconfig`.
+- Type `rostopic list` to see if you are connected
+
+---
+
+## 4 - Teleoperation
+
+"Teleoperation" refers to remote control of a vehicle/robot.  We will explore several different teleop approaches:
+- Keyboard control
+- Joystick control
+- Custom Web (HTML/JavaScript) interface
+
+#### Keyboard Control
+We will make use of the existing `teleop_twist_keyboard` package.
+- See https://github.com/ros-teleop/teleop_twist_keyboard for documentation
+
+
+To use the default settings, open a new terminal window and type:
+```
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+``` 
+
+Better yet, pass some custom parameter values, like this:
+```
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py _repeat_rate:=10.0 _key_timeout:=0.6 cmd_vel:=my_cmd_vel _speed:=0.9 _turn:=0.8
+```
+This will set the following parameter values:
+- `repeat_rate`: How fast, in Hz, that the last command is repeated.  Default is `0.0` (no repeat)
+- `key_timeout`: How long, in seconds, that the system will wait for another keypress before giving up.
+    - From the documentation:  "It is recommended that you set `key_timeout` higher than the initial key repeat delay on your system (This delay is 0.5 seconds by default on Ubuntu, but can be adjusted)."
+- `cmd_vel`:  Name of topic to be published.  Default is `cmd_vel`.
+    - NOTE:  I don't think this actually has an impact.  See https://github.com/ros-teleop/teleop_twist_keyboard/blob/master/teleop_twist_keyboard.py 
+- `speed` and `turn`:  Values for `linear.x` and `angular.z`, respectively. 
+
+Why are there things after the name of the Python script that start with an underscore and include the "walrus operator" (`:=`)?
+This actually lets us set variables in the Python script, using `rospy.get_param("~<parametername>", <defaultvalue>)`.
+Let's take a look at the `teleop_twist_keyboard.py` script (see https://github.com/ros-teleop/teleop_twist_keyboard/blob/master/teleop_twist_keyboard.py).
+You'll see the following:
+```
+speed = rospy.get_param("~speed", 0.5)
+turn = rospy.get_param("~turn", 1.0)
+speed_limit = rospy.get_param("~speed_limit", 1000)
+turn_limit = rospy.get_param("~turn_limit", 1000)
+repeat = rospy.get_param("~repeat_rate", 0.0)
+key_timeout = rospy.get_param("~key_timeout", 0.5)
+```
+In the command line, the parameter starts with a `_`; in the Python script, replace the leading `_` with a `~`.
+
+
+#### Joystick Control
+We will explore the following together in class:
+- https://wiki.ros.org/teleop_twist_joy
+- https://wiki.ros.org/joy
+- https://docs.ros.org/en/api/joy/html/
+
+These require a physical joystick (like a PlayStation or XBox controller).
+
+- (placeholder here to document where the `joy` node is saved, how Husky starts it, and how you might start it for other projects.)
+
+#### Custom Controller
+- (placeholder here for example code)
+
+
+--- 
