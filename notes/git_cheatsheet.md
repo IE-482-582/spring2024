@@ -21,12 +21,12 @@ A high-level overview of how we'll use GitHub this semester.
    This will create a directory named `spring2024`.
    
    **Note:** You'll get an error if you try to clone a repo that is already on your computer.  If this happens, you'll need to delete the existing repo from your computer first.  
-       - **CAUTION** The following command cannot be undone:
-           ```
-           # ONLY DO THIS IF YOU GET THE ERROR ABOVE
-           rm -rf spring2024
-           # AFTER REMOVING (DELETING) spring2024 TRY TO `git clone` AGAIN
-           ```  
+   - **CAUTION** The following command cannot be undone:
+       ```
+       # ONLY DO THIS IF YOU GET THE ERROR ABOVE
+       rm -rf spring2024
+       # AFTER REMOVING (DELETING) spring2024 TRY TO `git clone` AGAIN
+       ```  
       
 3. CD into the `spring2024` directory
    ```
