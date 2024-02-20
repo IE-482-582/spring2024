@@ -43,9 +43,17 @@ def getLocalHeadingRad(xCur, yCur, xGoal, yGoal, hdgRad):
 	relative to the robot's current heading (hdgRad).
 	
 	NOTES:
-	* This funtion returns the rotation required to face the target.  
-	    - It IS relative to the current orientation of the robot.
-	* The 0-radian angle is in the direction the robot is facing. 
+	* This function returns 2 values:
+		1. The rotation, in [radians], required to face the target. 
+		    - This is relative to the current orientation of the robot.
+		    - The 0-radian angle is in the direction the robot is facing. 
+		2. Either +1 to indicate that the rotation should be in the positive direction, or 
+		          -1 to indicate negative direction.
+
+	For example, suppose we have a husky, which uses the Forward/Left/Up coordinate system.
+	Its rotation is positive in the CCW direction.
+	
+	If our function returns `(.3, -1)`, this means that we should rotate .3 radians in the CW direction.
 	'''
 	# First, find the global angle from current to goal:
 	globalAngleRad = getAngleBetwPtsRad(xCur, yCur, xGoal, yGoal)
