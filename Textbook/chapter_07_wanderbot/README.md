@@ -19,7 +19,7 @@ NOTE: These instructions are a little different from the textbook's.
     ```
         
 3. Make sure you have the latest code from the course GitHub site.  
-    - See [GitHub Cheatsheet](../notes/git_cheatsheet.md) for instructions.
+    - See [GitHub Cheatsheet](../../notes/git_cheatsheet.md) for instructions.
         
  4. Copy the Python scripts to our wanderbot workspace
     ```
