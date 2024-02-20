@@ -2,6 +2,32 @@
 
 A high-level overview of how we'll use GitHub this semester.
 
+---
+## Installing GitHub Command Line Tools
+You'll need to do a little installation/configuration to be able to interact with GitHub via your command line.  Don't worry, it's relatively painless.
+- The instructions below come from https://github.com/cli/cli/blob/trunk/docs/install_linux.md, https://github.com/cli/cli#installation, and https://docs.github.com/en/github-cli/github-cli/quickstart
+
+
+1.  Install GitHub CLI:
+    ```
+    type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && sudo apt update \
+    && sudo apt install gh -y
+    ```
+
+2. Authenticate with GitHub:
+    ```
+    gh auth login
+    ```
+
+3.  Follow the on-screen prompts.
+    > GitHub CLI automatically stores your Git credentials for you when you choose HTTPS as your preferred protocol for Git operations and answer "yes" to the prompt asking if you would like to authenticate to Git with your GitHub credentials. This can be useful as it allows you to use Git commands like `git push` and `git pull` without needing to set up a separate credential manager or use SSH.
+
+
+---
 
 ## 1) Initialize a Local Instance of the Repository on your Computer
 
@@ -39,7 +65,7 @@ A high-level overview of how we'll use GitHub this semester.
    ```
  
 ## 2) Keep your Local Branch Up-to-date with the Master/Main Branch
-*You don't want your branch to fall behind the master.*
+*You don't want your branch to fall behind the main branch.*
 
 **You should perform these steps BEFORE you start making changes to your local branch.**
 
@@ -51,13 +77,13 @@ A high-level overview of how we'll use GitHub this semester.
 	```
    - The `tar` command will create a backup archive with the current timestamp.
 
-2. The next command will sync your local files (in your branch) with the master branch   
+2. The next command will sync your local files (in your branch) with the main branch   
    ```
    cd ~/Projects/IE-482-582/spring2024
-   git pull origin master
+   git pull origin main
    ```
 
-At this point your branch should include the latest code from the master, plus any new changes that you've made.
+At this point your branch should include the latest code from the `main` branch, plus any new changes that you've made.
 
 
 ## 3) Push to your Branch
@@ -88,19 +114,19 @@ At this point your branch should include the latest code from the master, plus a
    ```
 
 
-## 4) Submit a Pull Request (to update the master branch)
+## 4) Submit a Pull Request (to update the `main` branch)
 
-*"Pull Requests" are used to update the master branch.  You should submit pull requests frequently, to keep the master branch up-to-date, and to facilitate collaboration with others who are using this repo.*
+*"Pull Requests" are used to update the `main` branch.  You should submit pull requests frequently, to keep the `main` branch up-to-date, and to facilitate collaboration with others who are using this repo.*
 
 1. Go to the Github website and submit a pull request against your branch.
 
-2. The "owner" of the repo will review your pull request and accept it if everything looks good.  At this moment, the master branch and your branch will be identical.
+2. The "owner" of the repo will review your pull request and accept it if everything looks good.  At this moment, the `main` branch and your branch will be identical.
    - After accepting the pull request, the "owner" will also delete the branch (online) from which the pull request was submitted. 
    
-3. Whenever the master branch is updated, you -- and your repo collaborators -- need to sync your local files (in your branch) with the master branch:   
+3. Whenever the `main` branch is updated, you -- and your repo collaborators -- need to sync your local files (in your branch) with the `main` branch:   
    ```
    cd ~/Projects/IE-482-582/spring2024
-   git pull origin master
+   git pull origin main
    ```
    
    This is why you need to perform the steps in Section 2 before you start editing code on your local machine.
@@ -113,27 +139,27 @@ The main issue we are likely to encounter involves two people editing the same f
 - Suppose Mary and John are collaborating on a project. 
 - Mary edits the main `README.md` file, and pushes to the `mary` branch.
 - John also edits this `README.md` file in his local `john` branch. 
-- Now, Mary submits a pull request, and the owner merges Mary's new `README` into the `master`branch.
-- At this point, John's branch is behind the `master` (Mary's branch is even with the `master`).
-- If John tries to push his `README` to his branch, and wants to create a pull request, there's going to be a problem...John's `README` is now older than what's in the `master`.
+- Now, Mary submits a pull request, and the owner merges Mary's new `README` into the `main`branch.
+- At this point, John's branch is behind the `main` (Mary's branch is even with the `main`).
+- If John tries to push his `README` to his branch, and wants to create a pull request, there's going to be a problem...John's `README` is now older than what's in the `main`.
 
-What we want to happen is for John to "pull" the `master` branch into his branch.  Fortunately, Github will recognize that there's a mis-match between the `README` files.  John must now manually edit the `README` to ensure that his changes are incorporated into the `master` version of the file.  Once he completes this task, he may push to his branch and submit a pull request. 
+What we want to happen is for John to "pull" the `main` branch into his branch.  Fortunately, Github will recognize that there's a mis-match between the `README` files.  John must now manually edit the `README` to ensure that his changes are incorporated into the `main` version of the file.  Once he completes this task, he may push to his branch and submit a pull request. 
 
 
 --- 
 
-## Administrative Control of the Master Branch
+## Administrative Control of the Main Branch
 
-*To ensure that we don't accidentally/prematurely merge into the `master` branch, we will apply "branch protection rules".  The following steps should only be performed by the "owner" of the repo (probably Murray).*
+*To ensure that we don't accidentally/prematurely merge into the `main` branch, we will apply "branch protection rules".  The following steps should only be performed by the "owner" of the repo (probably Murray).*
 
 1. From the repo's main page, select "settings".
 2. Go to the "branches" link on the left.
 3. From the "branch protection rules" section, choose "add rule".
-4. For the "branch name pattern", type `master`.
+4. For the "branch name pattern", type `main`.
 5. In the "rule settings", check the box for "Restrict who can push to matching branches".  Then, enter the Github userid for the "owner" of the branch (probably "cmurray3").
 6. Save your changes by clicking the "create" button.
 
-Now, only the person identified as the owner will be able to update the master branch.  
+Now, only the person identified as the owner will be able to update the main branch.  
 
 ---    
 
