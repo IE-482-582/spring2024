@@ -8,6 +8,10 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from geometry_msgs.msg import Twist
 
+import sys, os
+sys.path.append(f"{os.environ['HOME']}/Projects/IE-482-582/spring2024/Projects/IE_tools")
+import IE_tools as IE_tools
+
 # ----------------------------------------
 CMD_VEL_RATE = 10  # [Hz]
 
