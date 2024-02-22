@@ -17,9 +17,18 @@ import time
 # ----------------------------------------
 CMD_VEL_RATE = 10  # [Hz]
 
+EPSILON = 0.1          # [meters].  Tolerance to reaching goal destination
+
+MAX_LINEAR_X          = 1.0   # [m/s]
+SLOWING_FACTOR_LINEAR = 0.8   # unitless
+
+MAX_ANGULAR_Z         = 0.05  # [rad/s]
+SLOWING_FACTOR_LINEAR = 0.5   # unitless
+		
 TWO_PI = 2*np.math.pi
 # ----------------------------------------
-
+	
+	
 class Zamboni():
 	def __init__(self):
 	
@@ -36,8 +45,8 @@ class Zamboni():
 		# Initialize these as None until we get real values in the odom callback:
 		self.pos_body_x_m = None
 		self.pos_body_y_m = None
-		self.heading      = None
-
+		self.heading      = None		
+		
 		while ((self.pos_body_x_m is None) or (self.pos_body_y_m is None) or  (self.heading is None)):
 			print('waiting for the odom callback to provide real values for these variables...')
 			time.sleep(1)   # We use the Python `sleep` function here because we don't care about a specific run rate.
@@ -83,23 +92,56 @@ class Zamboni():
 		msg.angular.z = angularZ
 
 		return msg
+		
+	def getStatus(self, xCur, yCur, xGoal, yGoal, hdgDeg):
+		'''
+		FIXME -- Document what on earth this function actually does?!!
+		'''
+		distance = IE_tools.dist2target(xCur, yCur, xGoal, yGoal)
+		
+		(angleDeg, sign) = IE_tools.getLocalHeadingDeg(xCur, yCur, xGoal, yGoal, hdgDeg)
+
+		return (distance, angleDeg, sign)
+				
+	def pController(self, dist2target, angleDeg, sign):
+		
+		linearX = min(MAX_LINEAR_X, dist2target/(1/CMD_VEL_RATE)*SLOWING_FACTOR_LINEAR)		# [m/s]
+		
+		# FIXME -- Write the proportional controller here...
+		# angularZ <= MAX_ANGULAR_Z	
+		# we have `angleDeg` and `sign` available
+		# CAUTION:  angleDeg is in DEGREES...angularZ MUST BE IN RADIANS PER SECOND
 			
+		return (linearX, angularZ)
+		
 	def run(self):
 		'''
 		This is the function that will publish Twist commands
 		'''
 		
+		# Get our goal destination
+		get (xGoal, yGoal)
+		
+		
 		while not rospy.is_shutdown():
-
-			# Do some "stuff" here...
-
-			# Call a function that will craft a
-			# Twist message to control the robot.
-			# FIXME -- Need to decide what info 
-			# gets passed to the function.
-			twistMsg = self.createTwistMsg()
-			
-			self.cmd_vel_pub.publish(twistMsg)
+			# What is our status? 
+			(dist2goal, angleDeg, sign) = self.getStatus(self.pos_body_x_m, 
+													   self.pos_body_y_m, 
+													   xGoal, yGoal, 
+													   self.heading)
+			 
+			# Have we reached the goal?
+			if (dist2goal < EPSILON):
+				get the next goal
+				if there's no next goal:
+					break
+			else:
+				# find out how to control the robot
+				(linearX, angularZ) = self.pController(dist2goal, angleDeg, sign)
+				
+				# publish Twist command		
+				twistMsg = self.createTwistMsg(linearX, angularZ)						
+				self.cmd_vel_pub.publish(twistMsg)
 
 			self.rate.sleep()
 				
