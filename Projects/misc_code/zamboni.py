@@ -8,6 +8,12 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from geometry_msgs.msg import Twist
 
+import sys, os
+sys.path.append(f"{os.environ['HOME']}/Projects/IE-482-582/spring2024/Projects/IE_tools")
+import IE_tools as IE_tools
+
+import time
+
 # ----------------------------------------
 CMD_VEL_RATE = 10  # [Hz]
 
@@ -26,6 +32,15 @@ class Zamboni():
 
 		# Set the shutdown function
 		rospy.on_shutdown(self.shutdown)
+		
+		# Initialize these as None until we get real values in the odom callback:
+		self.pos_body_x_m = None
+		self.pos_body_y_m = None
+		self.heading      = None
+
+		while ((self.pos_body_x_m is None) or (self.pos_body_y_m is None) or  (self.heading is None)):
+			print('waiting for the odom callback to provide real values for these variables...')
+			time.sleep(1)   # We use the Python `sleep` function here because we don't care about a specific run rate.
 
 		self.run()
 		
