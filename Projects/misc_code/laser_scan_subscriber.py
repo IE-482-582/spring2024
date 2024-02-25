@@ -19,7 +19,7 @@ import numpy as np
 class LaserScanReader():
 	def __init__(self):
 	
-		rospy.init_node("laser_scan_reader")
+		rospy.init_node("laser_scan_reader", anonymous = True)
 
 		# NEW
 		# Initialize a converter from LaserScan to XY
