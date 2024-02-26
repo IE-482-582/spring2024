@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import rospy
+# import geopy.distance
 
 MATH_PI_OVER_TWO  = math.pi/2.0
 TWO_PI            = 2*math.pi
@@ -9,6 +10,151 @@ PI_OVER_ONEEIGHTY = math.pi/180.0
 PI                = math.pi
 
 
+
+def dist2target(xCur, yCur, xGoal, yGoal):
+	'''
+	Return the distance from the current location to the goal location
+	'''
+	return math.sqrt((xGoal-xCur)**2 + (yGoal-yCur)**2)
+
+
+def getAngleBetwPtsRad(xCur, yCur, xGoal, yGoal):
+	'''
+	What is the angle, in [radians], from (xCur, yCur) to (xGoal, yGoal)?
+	
+	NOTES:
+	* The reference frame is global/fixed. 
+	    - This is NOT relative to the orientation of a robot.
+	* The 0-radian angle is along the "x" direction.
+	    - This works for North/East/Down, Forward/Left/Up, or Cartesian coordinate systems,
+	      as long as the right-hand rule is followed.
+	'''
+	return (math.atan2(yGoal-yCur, xGoal-xCur) + TWO_PI) % (TWO_PI)  # In the range [0,2*pi]
+	
+def getAngleBetwPtsDeg(xCur, yCur, xGoal, yGoal):
+	'''
+	What is the angle, in [degrees], from (xCur, yCur) to (xGoal, yGoal)?	
+	'''
+	return np.rad2deg(getAngleBetwPtsRad(xCur, yCur, xGoal, yGoal))  # In the range [0,360]
+
+def getLocalHeadingRad(xCur, yCur, xGoal, yGoal, hdgRad):
+	'''
+	Find the angle, in [radians], required to move from current location to goal location, 
+	relative to the robot's current heading (hdgRad).
+	
+	NOTES:
+	* This function returns 2 values:
+		1. The rotation, in [radians], required to face the target. 
+		    - This is relative to the current orientation of the robot.
+		    - The 0-radian angle is in the direction the robot is facing. 
+		2. Either +1 to indicate that the rotation should be in the positive direction, or 
+		          -1 to indicate negative direction.
+
+	For example, suppose we have a husky, which uses the Forward/Left/Up coordinate system.
+	Its rotation is positive in the CCW direction.
+	
+	If our function returns `(.3, -1)`, this means that we should rotate .3 radians in the CW direction.
+	'''
+	# First, find the global angle from current to goal:
+	globalAngleRad = getAngleBetwPtsRad(xCur, yCur, xGoal, yGoal)
+	
+	# Now, find the difference from current heading, in range [0, 2Pi]:
+	localAngleRad = boundedAngle(globalAngleRad - hdgRad, 0, TWO_PI)
+	
+	# Now, find the shortest angle and direction of rotation to reach this goal:
+	return shortestRotationRad(0, localAngleRad)
+
+	
+def getLocalHeadingDeg(xCur, yCur, xGoal, yGoal, hdgDeg):
+	'''
+	See description for `getLocalHeadingRad`
+	'''
+	(angleRad, sign) = getLocalHeadingRad(xCur, yCur, xGoal, yGoal, np.deg2rad(hdgDeg))
+	 
+	return (np.rad2deg(angleRad), sign)
+	
+	
+def shortestRotationRad(thetaCurrent, thetaGoal):
+	# What is the shortest angle to traverse to get from thetaCurrent to thetaGoal?
+	# 	thetaCurrent in [0, 2Pi]
+	# 	thetaGoal in [0, 2Pi]
+	thetaCurrent = boundedAngle(thetaCurrent, 0, TWO_PI)
+	thetaGoal    = boundedAngle(thetaGoal,    0, TWO_PI)
+
+	ccwAngle = (thetaCurrent-thetaGoal)%TWO_PI
+	cwAngle  = (thetaGoal-thetaCurrent)%TWO_PI
+	if (ccwAngle < cwAngle):
+		return (ccwAngle, -1)  # angle in the range [0,2*pi]
+	else:
+		return (cwAngle, +1)   # angle in the range [0,2*pi]
+		
+def shortestRotationDeg(thetaCurrent, thetaGoal):
+	# What is the shortest angle to traverse to get from thetaCurrent to thetaGoal?
+	# 	thetaCurrent in [0, 360]
+	# 	thetaGoal in [0, 360]
+
+	(angleRad, sign) = shortestRotationRad(np.deg2rad(thetaCurrent), np.deg2rad(thetaGoal))
+	return (np.rad2deg(angleRad), sign)
+			
+	
+	
+def getPointInDistXfwdRad(xCur, yCur, hdgRad, distMeters):
+	"""
+	Generate [x, y] coordinate given a current coordinate, a direction, and a distance.
+
+	NOTE: +x is forward.
+	If using NED coordinate system, 
+		+x is forward, +y is right, +z is down
+		0 radians is forward, and increases CLOCKWISE (e.g., PI/2 degrees is EAST)
+	If using FLU coordinate system,
+		+x is forward, +y is left, +z is up
+		0 radians is forward, and increases COUNTERCLOCKWISE (e.g., PI/2 degrees is WEST)
+
+	Parameters
+	----------
+	xCur, yCur: floats
+		Current location
+	direction: float
+		The direction, range [0, 2*Pi] in radians, 0 is in direction of +x
+	distMeters: float
+		The distance between current point and our destination
+	Returns
+	-------
+	list
+		A location in distance with given direction, in [x, y] form.
+	"""
+	x = xCur + distMeters * math.cos(hdgRad)
+	y = yCur + distMeters * math.sin(hdgRad)
+
+	return [x, y]			
+
+def getPointInDistXfwdDeg(xCur, yCur, hdgDeg, distMeters):
+	
+	return getPointInDistXfwdRad(xCur, yCur, np.deg2rad(hdgDeg), distMeters)
+
+"""
+We might want/need this function in the future.
+The idea is to find the location of a point that is [x, y] meters away from our
+current location, given that we are currently facing hdgDeg degrees in a world frame.
+	
+def geoPointInDistanceXY(loc, x, y, hdgDeg):
+	'''
+	Given
+		loc [lat, lon]
+		x   [meters]
+		y   [meters]
+		hdg world frame, 0 north, 90 east
+	Return
+		[lat, lon]
+	
+	'''
+	
+	dist = math.sqrt(x**2 + y**2)
+	bearing = effHeadingDeg(hdgDeg, x, y)
+	return list(geopy.distance.distance(meters=dist).destination(point=loc, bearing=bearing))[0:2]
+"""
+	
+	
 def boundedAngle(theta, angle_min, angle_max):
 	'''
 	Convert a given angle to be between a min/max range.
@@ -38,7 +184,7 @@ def getIndex(theta, angle_min, angle_max, angle_increment, is_index_0_angle_max=
 
 	All angles in radians	
 	'''
-	
+	 
 	try:
 		theta = boundedAngle(theta, angle_min, angle_max)
 		if (is_index_0_angle_max):
