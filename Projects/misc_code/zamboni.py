@@ -178,13 +178,13 @@ class Zamboni():
 				if (xGoal is None):
 					print('We reached the goal.  All done.')
 					break
-			else:
-				# find out how to control the robot
-				(linearX, angularZ) = self.pController(dist2goal, angleDeg, sign)
-				
-				# publish Twist command		
-				twistMsg = self.createTwistMsg(linearX, angularZ)						
-				self.cmd_vel_pub.publish(twistMsg)
+
+			# find out how to control the robot
+			(linearX, angularZ) = self.pController(dist2goal, angleDeg, sign)
+			
+			# publish Twist command		
+			twistMsg = self.createTwistMsg(linearX, angularZ)						
+			self.cmd_vel_pub.publish(twistMsg)
 
 			self.rate.sleep()
 				
