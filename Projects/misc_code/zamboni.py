@@ -30,11 +30,11 @@ CMD_VEL_RATE = 10  # [Hz]
 
 EPSILON = 0.1          # [meters].  Tolerance to reaching goal destination
 
-MAX_LINEAR_X          = 1.0   # [m/s]
+MAX_LINEAR_X          = 0.5   # [m/s]
 SLOWING_FACTOR_LINEAR = 0.8   # unitless
 
 MAX_ANGULAR_Z          = 0.5  # [rad/s]
-SLOWING_FACTOR_ANGULAR = 0.5   # unitless
+SLOWING_FACTOR_ANGULAR = 1.0   # unitless
 		
 TWO_PI = 2*np.math.pi
 # -----------------------------------------
@@ -124,7 +124,8 @@ class Zamboni():
 		distance = IE_tools.dist2target(xCur, yCur, xGoal, yGoal)
 		
 		(angleDeg, sign) = IE_tools.getLocalHeadingDeg(xCur, yCur, xGoal, yGoal, hdgDeg)
-
+		
+		print(f'{distance} m to goal.  Rotate {sign*angleDeg} degrees.')
 		return (distance, angleDeg, sign)
 				
 	def pController(self, dist2target, angleDeg, sign):
@@ -134,15 +135,16 @@ class Zamboni():
 			cvr_multiplier = CMD_VEL_RATE
 		else:
 			cvr_multiplier = 1
-			
-		linearX = min(MAX_LINEAR_X, dist2target * cvr_multiplier * SLOWING_FACTOR_LINEAR)		# [m/s]
-		
+					
 		# CAUTION:  angleDeg is in DEGREES...angularZ MUST BE IN RADIANS PER SECOND
 		angleRad = np.deg2rad(angleDeg)
 		angleRadAbs = angleRad * cvr_multiplier * SLOWING_FACTOR_ANGULAR
-		angleRadAbs = min(MAX_ANGULAR_Z, angleRadAbs)
-		
+		angleRadAbs = min(MAX_ANGULAR_Z, angleRadAbs)		
 		angularZ = angleRadAbs * sign
+
+		# Let's scale the linear.x component based on required rotation angle
+		linearX = dist2target * cvr_multiplier * SLOWING_FACTOR_LINEAR * (1 - angleRadAbs/MAX_ANGULAR_Z)
+		linearX = min(MAX_LINEAR_X, dist2target * cvr_multiplier * SLOWING_FACTOR_LINEAR)		# [m/s]
 			
 		return (linearX, angularZ)
 		
@@ -157,6 +159,7 @@ class Zamboni():
 									  goalList[goalIndex]['angleDeg'], 
 									  goalList[goalIndex]['length'], 
 									  self.xHome, self.yHome, w)
+		print(f'Headed to {xGoal, yGoal}')
 									  
 		while not rospy.is_shutdown():
 			# What is our status? 
@@ -168,7 +171,7 @@ class Zamboni():
 			# Have we reached the goal?
 			if (dist2goal < EPSILON):
 				# Get the next goal
-				goalIndex = (goalIndex + 1) % (len(goalList) - 1)
+				goalIndex = (goalIndex + 1) % (len(goalList))
 				(xGoal, yGoal) = self.getGoal(xGoal, yGoal,
 									  goalList[goalIndex]['angleDeg'], 
 									  goalList[goalIndex]['length'], 
@@ -178,13 +181,13 @@ class Zamboni():
 				if (xGoal is None):
 					print('We reached the goal.  All done.')
 					break
-			else:
-				# find out how to control the robot
-				(linearX, angularZ) = self.pController(dist2goal, angleDeg, sign)
-				
-				# publish Twist command		
-				twistMsg = self.createTwistMsg(linearX, angularZ)						
-				self.cmd_vel_pub.publish(twistMsg)
+
+			# find out how to control the robot
+			(linearX, angularZ) = self.pController(dist2goal, angleDeg, sign)
+			
+			# publish Twist command		
+			twistMsg = self.createTwistMsg(linearX, angularZ)						
+			self.cmd_vel_pub.publish(twistMsg)
 
 			self.rate.sleep()
 				
