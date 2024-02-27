@@ -14,7 +14,18 @@ import IE_tools as IE_tools
 
 import time
 
-# ----------------------------------------
+# ------- Input Parameters ----------------
+l = 5
+s = 2
+w = 13
+
+# --- Define the structure of our route ---
+goalList = [{'angleDeg':   0, 'length': l}, 
+			{'angleDeg':  90, 'length': s}, 
+			{'angleDeg': 180, 'length': l}, 
+			{'angleDeg':  90, 'length': s}]
+
+# ---------- Constants --------------------
 CMD_VEL_RATE = 10  # [Hz]
 
 EPSILON = 0.1          # [meters].  Tolerance to reaching goal destination
@@ -22,11 +33,11 @@ EPSILON = 0.1          # [meters].  Tolerance to reaching goal destination
 MAX_LINEAR_X          = 1.0   # [m/s]
 SLOWING_FACTOR_LINEAR = 0.8   # unitless
 
-MAX_ANGULAR_Z         = 0.05  # [rad/s]
-SLOWING_FACTOR_LINEAR = 0.5   # unitless
+MAX_ANGULAR_Z          = 0.5  # [rad/s]
+SLOWING_FACTOR_ANGULAR = 0.5   # unitless
 		
 TWO_PI = 2*np.math.pi
-# ----------------------------------------
+# -----------------------------------------
 	
 	
 class Zamboni():
@@ -50,6 +61,10 @@ class Zamboni():
 		while ((self.pos_body_x_m is None) or (self.pos_body_y_m is None) or  (self.heading is None)):
 			print('waiting for the odom callback to provide real values for these variables...')
 			time.sleep(1)   # We use the Python `sleep` function here because we don't care about a specific run rate.
+	
+		# Keep track of our home/starting location:
+		self.xHome = self.pos_body_x_m
+		self.yHome = self.pos_body_y_m
 
 		self.run()
 		
@@ -93,6 +108,15 @@ class Zamboni():
 
 		return msg
 		
+	def getGoal(self, xCur, yCur, angleDeg, length, xHome, yHome, w):
+		(xGoal, yGoal) = IE_tools.getPointInDistXfwdDeg(xCur, yCur, angleDeg, length)	
+		
+		if (yGoal - yHome > w):
+			print('The goal would be beyond our desired width')
+			return (None, None)
+		else:
+			return (xGoal, yGoal)	
+		
 	def getStatus(self, xCur, yCur, xGoal, yGoal, hdgDeg):
 		'''
 		FIXME -- Document what on earth this function actually does?!!
@@ -105,12 +129,20 @@ class Zamboni():
 				
 	def pController(self, dist2target, angleDeg, sign):
 		
-		linearX = min(MAX_LINEAR_X, dist2target/(1/CMD_VEL_RATE)*SLOWING_FACTOR_LINEAR)		# [m/s]
+		if (CMD_VEL_RATE < 1):
+			# We are checking things infrequently.  Don't go too far.
+			cvr_multiplier = CMD_VEL_RATE
+		else:
+			cvr_multiplier = 1
+			
+		linearX = min(MAX_LINEAR_X, dist2target * cvr_multiplier * SLOWING_FACTOR_LINEAR)		# [m/s]
 		
-		# FIXME -- Write the proportional controller here...
-		# angularZ <= MAX_ANGULAR_Z	
-		# we have `angleDeg` and `sign` available
 		# CAUTION:  angleDeg is in DEGREES...angularZ MUST BE IN RADIANS PER SECOND
+		angleRad = np.deg2rad(angleDeg)
+		angleRadAbs = angleRad * cvr_multiplier * SLOWING_FACTOR_ANGULAR
+		angleRadAbs = min(MAX_ANGULAR_Z, angleRadAbs)
+		
+		angularZ = angleRadAbs * sign
 			
 		return (linearX, angularZ)
 		
@@ -120,9 +152,12 @@ class Zamboni():
 		'''
 		
 		# Get our goal destination
-		get (xGoal, yGoal)
-		
-		
+		goalIndex = 0
+		(xGoal, yGoal) = self.getGoal(self.pos_body_x_m, self.pos_body_y_m,
+									  goalList[goalIndex]['angleDeg'], 
+									  goalList[goalIndex]['length'], 
+									  self.xHome, self.yHome, w)
+									  
 		while not rospy.is_shutdown():
 			# What is our status? 
 			(dist2goal, angleDeg, sign) = self.getStatus(self.pos_body_x_m, 
@@ -132,8 +167,16 @@ class Zamboni():
 			 
 			# Have we reached the goal?
 			if (dist2goal < EPSILON):
-				get the next goal
-				if there's no next goal:
+				# Get the next goal
+				goalIndex = (goalIndex + 1) % (len(goalList) - 1)
+				(xGoal, yGoal) = self.getGoal(xGoal, yGoal,
+									  goalList[goalIndex]['angleDeg'], 
+									  goalList[goalIndex]['length'], 
+									  self.xHome, self.yHome, w)	
+				print(f'Goal Reached.  Now headed to ({xGoal, yGoal})')
+									  			
+				if (xGoal is None):
+					print('We reached the goal.  All done.')
 					break
 			else:
 				# find out how to control the robot
