@@ -219,7 +219,10 @@ if __name__ == "__main__":
 #### Keyboard Control
 We will make use of the existing `teleop_twist_keyboard` package.
 - See https://github.com/ros-teleop/teleop_twist_keyboard for documentation
-
+- If you don't already have a robot running, you can start one like this:
+    ```
+    roslaunch husky_gazebo empty_world.launch
+    ```
 
 To use the default settings, open a new terminal window and type:
 ```
@@ -235,7 +238,7 @@ This will set the following parameter values:
 - `key_timeout`: How long, in seconds, that the system will wait for another keypress before giving up.
     - From the documentation:  "It is recommended that you set `key_timeout` higher than the initial key repeat delay on your system (This delay is 0.5 seconds by default on Ubuntu, but can be adjusted)."
 - `cmd_vel`:  Name of topic to be published.  Default is `cmd_vel`.
-    - NOTE:  I don't think this actually has an impact.  See https://github.com/ros-teleop/teleop_twist_keyboard/blob/master/teleop_twist_keyboard.py 
+    - NOTE:  I don't see how this actually has an impact, but it appears to work as advertised.  See https://github.com/ros-teleop/teleop_twist_keyboard/blob/master/teleop_twist_keyboard.py 
 - `speed` and `turn`:  Values for `linear.x` and `angular.z`, respectively. 
 
 Why are there things after the name of the Python script that start with an underscore and include the "walrus operator" (`:=`)?
@@ -265,6 +268,24 @@ These require a physical joystick (like a PlayStation or XBox controller).
 
 #### Custom Controller
 - (placeholder here for example code)
+
+
+## 5 - Autonomous Navigation
+
+We will start by controlling our Husky, but these navigation tools are more broadly applicable.
+
+- Move Base:  https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyMove.html
+    - http://wiki.ros.org/move_base
+
+- AMCL: https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyAMCL.html
+    - http://wiki.ros.org/amcl
+
+- Gmapping: https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyGmapping.html
+    - http://wiki.ros.org/gmapping 
+
+### Further Reading:
+- http://wiki.ros.org/navigation
+- http://wiki.ros.org/navigation/Tutorials **CHECK THIS OUT**
 
 
 --- 
