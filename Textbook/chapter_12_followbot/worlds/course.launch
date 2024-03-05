@@ -16,9 +16,7 @@ This is a modified version of /opt/ros/noetic/share/husky_gazebo/launch/empty_wo
     <arg name="debug" value="false"/>
   </include>
 
-  <!--
   <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
   </include>
-  -->
   
 </launch>
