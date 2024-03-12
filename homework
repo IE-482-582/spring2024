@@ -1,0 +1,47 @@
+/homework/teleop_husky.py
+#!/usr/bin/env python
+
+import rospy
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+
+class TeleopHusky:
+    def __init__(self):
+        rospy.init_node('teleop_husky')
+
+        # Parameters
+        self.clearance_tolerance = rospy.get_param('~clearance_tolerance', 0.5)
+
+        # Subscribe to topics
+        rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        rospy.Subscriber('/cmd_vel', Twist, self.twist_callback)
+
+        # Publisher
+        self.cmd_vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist, queue_size=10)
+
+        # Internal variables
+        self.latest_scan = None
+
+    def scan_callback(self, scan_msg):
+        self.latest_scan = scan_msg
+
+    def twist_callback(self, twist_msg):
+        if self.latest_scan is not None:
+            if twist_msg.linear.x >= 0:
+                # Check if there's enough clearance
+                closest_point = min(self.latest_scan.ranges)
+                if closest_point > self.clearance_tolerance:
+                    self.cmd_vel_pub.publish(twist_msg)
+                else:
+                    rospy.logwarn("Not enough clearance to move forward, stopping!")
+            else:
+                rospy.logwarn("Husky is not moving backwards, ignoring the twist command.")
+        else:
+            rospy.logwarn("No laser scan data received yet, cannot determine clearance.")
+
+if __name__ == '__main__':
+    try:
+        teleop_husky = TeleopHusky()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
