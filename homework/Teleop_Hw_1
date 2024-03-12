@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import rospy
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+
+class HuskyTeleop:
+    def __init__(self):
+        rospy.init_node('husky_teleop')
+        rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        rospy.Subscriber('/cmd_vel', Twist, self.twist_callback)
+        self.cmd_vel_pub = rospy.Publisher('/husky/cmd_vel', Twist, queue_size=10)
+        
+        self.obstacle_threshold = rospy.get_param("~obstacle_threshold", 0.5) # Set obstacle clearance threshold
+        
+    def scan_callback(self, msg):
+        # Analyze laser scan data to determine if there are obstacles
+        if min(msg.ranges) < self.obstacle_threshold:
+            rospy.loginfo("Obstacle detected, stopping Husky")
+            self.cmd_vel_pub.publish(Twist())  # Stop Husky if obstacle detected
+    
+    def twist_callback(self, twist_msg):
+        # Check if Twist command is acceptable (linear x >= 0)
+        if twist_msg.linear.x >= 0:
+            self.cmd_vel_pub.publish(twist_msg)  # Publish acceptable Twist command
+        else:
+            rospy.logwarn("Husky cannot move backward")
+
+if __name__ == '__main__':
+    try:
+        husky_teleop = HuskyTeleop()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
