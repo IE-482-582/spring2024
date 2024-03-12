@@ -184,7 +184,7 @@ def getIndex(theta, angle_min, angle_max, angle_increment, is_index_0_angle_max=
 
 	All angles in radians	
 	'''
-	 
+	
 	try:
 		theta = boundedAngle(theta, angle_min, angle_max)
 		if (is_index_0_angle_max):

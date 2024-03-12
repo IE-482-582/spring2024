@@ -10,13 +10,13 @@ import time
 
 # Our support script `IE_tools.py` is in a parallel directory.
 # So, we have to let Python know where to find it:
-import sys
+import sys,os
 sys.path.append("..")
 import IE_tools.IE_tools as IE_tools
 
 import numpy as np
 
-class LaserScanReader():
+class OAfilter():
 	def __init__(self):
 	
 		rospy.init_node("laser_scan_reader", anonymous = True)
@@ -38,29 +38,13 @@ class LaserScanReader():
 		rospy.spin()
 		
 	def callback_front_scan(self, msg):
-		# print(msg.angle_min, msg.ranges[0])
 
-		# Convert LaserScan data to (x,y)
 		self.scan2xy.scan2xy(msg)
-
-		'''
-		# If an obstacle is detected, just print the first result:
-		if (len(self.scan2xy.x) > 0):
-			print(self.scan2xy.x[0], self.scan2xy.y[0])
-		'''
-
-		# QUESTION:  What does this do (assuming `refFrame == 'FLU'`)?	
-		# huskyWidth = 0.67	meters
 		x_array = self.scan2xy.x[((self.scan2xy.y < +0.5) & (self.scan2xy.y > -0.5))]
 		if (len(x_array) > 0):
 			print(np.min(x_array))
 		
-	'''	
-	def run(self):
-		# THIS IS BAD FORM!
-		while True:
-			self.rate.sleep()
-	'''		
+	
 			
 if __name__ == "__main__":
-	LaserScanReader()
+	OAfilter()

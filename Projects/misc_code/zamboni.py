@@ -16,14 +16,14 @@ import IE_tools as IE_tools
 import time
 
 # ----------------------------------------
-CMD_VEL_RATE = 10  # [Hz]
+CMD_VEL_RATE = 15  # [Hz]
 EPSILON = 0.1      # [meters].  Tolerance to reaching goal destination
 
-MAX_LINEAR_X          = 1.0   # [m/s]
-SLOWING_FACTOR_LINEAR = 0.8   # unitless
+MAX_LINEAR_X          = 1.5   # [m/s]
+SLOWING_FACTOR_LINEAR = 0.1   # unitless
 
-MAX_ANGULAR_Z         = 0.05  # [rad/s]
-SLOWING_FACTOR_ANGULAR = 0.5  # unitless 
+MAX_ANGULAR_Z         = 0.6  # [rad/s]
+SLOWING_FACTOR_ANGULAR = 0.9  # unitless 
 		
 TWO_PI = 2*np.math.pi
 DEG2RAD = np.math.pi/180.0
@@ -117,9 +117,13 @@ class Zamboni():
 				
 	def pController(self, dist2target, angleDeg, sign):
 		
-		linearX = min(MAX_LINEAR_X, dist2target/(1/CMD_VEL_RATE)*SLOWING_FACTOR_LINEAR)		# [m/s]
+		
 		
 		angularZ = sign * min(MAX_ANGULAR_Z, (angleDeg * DEG2RAD)/(1/CMD_VEL_RATE)*SLOWING_FACTOR_ANGULAR)		# [m/s]
+		linearX = 0
+		if abs(angleDeg) < 5:
+			linearX = min(MAX_LINEAR_X, dist2target/(1/CMD_VEL_RATE)*SLOWING_FACTOR_LINEAR)		# [m/s]
+
 		# Write the proportional controller here...
 		# angularZ <= MAX_ANGULAR_Z	
 		# we have `angleDeg` and `sign` available
@@ -154,7 +158,8 @@ class Zamboni():
 		'''
 		This is the function that will publish Twist commands
 		'''
-		
+
+		''''''
 		# make array of goal points
 		self.generateGoals()
 		print(self.goalList)
@@ -163,7 +168,7 @@ class Zamboni():
 		twistMsg = self.createTwistMsg(0, 0)						
 		self.cmd_vel_pub.publish(twistMsg)
 
-		goalIndex = 1
+		goalIndex = 0
 		while not rospy.is_shutdown():
 			# What is our status? 
 			
@@ -173,6 +178,7 @@ class Zamboni():
 													   self.pos_body_y_m, 
 													   xGoal, yGoal, 
 													   self.heading)
+			print(dist2goal)
 			# Have we reached the goal?
 			if (dist2goal < EPSILON):
 				print("goal reached!")
@@ -188,10 +194,11 @@ class Zamboni():
 				# publish Twist command		
 				twistMsg = self.createTwistMsg(linearX, angularZ)						
 				self.cmd_vel_pub.publish(twistMsg)
-
+			
 			self.rate.sleep()
 				
 	def shutdown(self):
+		
 		'''
 		This function will be called when the script is ended.
 		This gives us a chance to shut things down cleanly.
