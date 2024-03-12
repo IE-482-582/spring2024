@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+import rospy
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
+class SafeTeleop:
+    def __init__(self):
+        rospy.init_node('safe_teleop')
+
+        # Subscribing to the Husky's scan topic to check for obstacles
+        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+
+        # Subscribing to the teleop_twist_keyboard node's output
+        self.teleop_sub = rospy.Subscriber('/cmd_vel', Twist, self.teleop_callback)
+
+        # Optionally subscribe to the Husky's odometry topic
+        # self.odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, self.odometry_callback)
+
+        # Publisher for sending safe twist commands
+        self.safe_cmd_vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist, queue_size=1)
+
+        # Parameters for obstacle avoidance
+        self.safe_distance = rospy.get_param('~safe_distance', 0.5)  # Default safe distance
+        self.current_twist = Twist()
+        self.obstacle_near = False
+
+    def scan_callback(self, data):
+        """
+        Callback function for the scan topic subscriber.
+        Checks if there is an obstacle in front of the robot within a certain distance.
+        """
+        # Assume a simple front scan by checking some ranges in front of the robot
+        front_ranges = data.ranges[len(data.ranges)//2 - 15:len(data.ranges)//2 + 15]
+        self.obstacle_near = any(r < self.safe_distance for r in front_ranges if r > 0)
+
+    def teleop_callback(self, data):
+        """
+        Callback function for the teleop twist keyboard subscriber.
+        Stores the most recent twist command if it's safe to move forward.
+        """
+        if not self.obstacle_near or data.linear.x <= 0:
+            self.current_twist = data
+
+    # Optionally, you can define an odometry callback here
+
+    def run(self):
+        """
+        Main loop for the safe teleop node.
+        Publishes safe twist commands.
+        """
+        rate = rospy.Rate(10)  # 10 Hz
+        while not rospy.is_shutdown():
+            if self.current_twist.linear.x > 0 and self.obstacle_near:
+                # If there's an obstacle close by and the command is to move forward, don't publish the twist
+                rospy.logwarn("Obstacle detected! Stopping the robot.")
+                self.safe_cmd_vel_pub.publish(Twist())  # Publish a zero twist to stop the robot
+            else:
+                # Otherwise, publish the current twist command
+                self.safe_cmd_vel_pub.publish(self.current_twist)
+            rate.sleep()
+
+if __name__ == '__main__':
+    try:
+        node = SafeTeleop()
+        node.run()
+    except rospy.ROSInterruptException:
+        pass
