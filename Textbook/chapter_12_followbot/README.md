@@ -74,45 +74,121 @@ In this next example, we're going to place our robot on the ground.  There is a 
 
 ### Terminal 1: Open Gazebo and place a Husky on the test course:
 
-    ```	
-    cd ~/catkin_ws/src/followbot/
-    roslaunch followbot course.launch
+```	
+cd ~/catkin_ws/src/followbot/
+roslaunch followbot course.launch
+```
+
+- This is a customized `.launch` file, located in `~/catkin_ws/src/followbot/worlds`.
+- If the yellow track doesn't appear, try the following:
     ```
-    
-    - This is a customized `.launch` file, located in `~/catkin_ws/src/followbot/worlds`.
-    - If the yellow track doesn't appear, try the following:
-        ```
-        export GAZEBO_RESOURCE_PATH=$GAZEBO_RESOURCE_PATH:~/catkin_ws/src/followbot/worlds
-        ```
+    export GAZEBO_RESOURCE_PATH=$GAZEBO_RESOURCE_PATH:~/catkin_ws/src/followbot/worlds
+    ```
         	
 ### Terminal 2:  Launch a ROS node where we filter the camera image:
+
+```
+cd ~/catkin_ws/src/followbot/scripts
+rosrun followbot camera_color_filter.py 
+```	
+
+- This Python script has been modified slightly to show the original and filtered images.
+- If you get an error indicating that `rosrun` cannot find an executable:
     ```
-    cd ~/catkin_ws/src/followbot/scripts
-    rosrun followbot camera_color_filter.py 
-    ```	
-   
-    - This Python script has been modified slightly to show the original and filtered images.
-    - If you get an error indicating that `rosrun` cannot find an executable:
-        ```
-        chmod +x camera_color_filter.py
-        ``` 
+    chmod +x camera_color_filter.py
+    ``` 
 --- 
 
 ## Following a Line
 
 ### Terminal 1: Open Gazebo and place a Husky on the test course:
 
-    ```	
-    cd ~/catkin_ws/src/followbot/
-    roslaunch followbot course.launch
-    ```
+```	
+cd ~/catkin_ws/src/followbot/
+roslaunch followbot course.launch
+```
     
 ### Terminal 2:  Launch a ROS node that will send Twist commands to follow the line
+
+```
+cd ~/catkin_ws/src/followbot/scripts
+rosrun followbot follower_p.py 
+```	
+- If you get an error indicating that `rosrun` cannot find an executable:
     ```
-    cd ~/catkin_ws/src/followbot/scripts
-    rosrun followbot follower_p.py 
-    ```	
-    - If you get an error indicating that `rosrun` cannot find an executable:
-        ```
-        chmod +x follower_p.py
-        ``` 
+    chmod +x follower_p.py
+    ``` 
+
+
+---
+
+# Modifying the Course - Two Lines
+
+This is a (modified) summary of the steps we followed in class to create a two-line course.
+- We used `GIMP` to edit the `course.png` file...those steps are not repeated here.
+
+1. First, change directories to where our worlds are saved:
+    ```
+    cd ~/catkin_ws/src/followbot/worlds
+    ```
+
+2.  Create `course_duo.launch` as a copy of `course.launch` and edit:
+    ```
+    cp course.launch course_duo.launch
+    pico course_duo.launch
+    ```
+    
+    Replace the value of the `world_name` argument to reference `course_duo.world`, as follows:
+    ```
+        <arg name="world_name" value="$(find followbot)/worlds/course_duo.world"/>
+    ```
+    
+    
+3.  Create `course_duo.world` as a copy of `course.world` and edit:
+    ```
+    cp course.world course_duo.world
+    pico course_duo.world
+    ```
+    
+    Scroll down near the bottom and edit the lines inside the `<material>`...`</material>` tags.  We need to reference `course_duo` instead of `course`:
+    ```
+          <material>
+            <script>
+              <uri>file://worlds/course_duo.material</uri>
+              <name>course_duo</name>
+            </script>
+          </material>    
+    ```
+    - NOTE:  In class, we forgot to change the `<name>course_duo</name>` line.
+
+4. Create `course_duo.material` as a copy of `course.material` and edit:
+    ```
+    cp course.material course_duo.material
+    pico course_duo.material
+    ```
+    
+    The file should look like this:
+    ```
+    material course_duo
+    {
+      receive_shadows on
+      technique
+      {
+        pass
+        {
+          ambient 0.5 0.5 0.5 1.0
+          texture_unit
+          {
+            texture course_duo.png
+          }
+        }
+      }
+    }
+    ```
+      
+    - NOTE:  In class, we forgot to edit the first line of this file. 
+    
+Now, you're ready to launch:
+```
+roslaunch followbot course_duo.launch
+```    

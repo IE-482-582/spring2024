@@ -15,8 +15,8 @@ class ViewCamera:
 		
 		hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 		
-		lower_yellow = numpy.array([ 10, 10, 10]) 		#	numpy.array([ 50,  50, 170])
-		upper_yellow = numpy.array([255, 255, 250])
+		lower_yellow = numpy.array([ 20, 10, 70]) 		#	numpy.array([ 50,  50, 170])
+		upper_yellow = numpy.array([ 90, 255, 250])
 		yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
 		masked = cv2.bitwise_and(image, image, mask=yellow_mask)
 		
@@ -25,6 +25,9 @@ class ViewCamera:
 		
 		# Display the filtered image:
 		cv2.imshow("yellow mask", yellow_mask ) 
+
+		# Display the filtered image:
+		cv2.imshow("original masked", masked ) 
 		
 		cv2.waitKey(3)
 	
