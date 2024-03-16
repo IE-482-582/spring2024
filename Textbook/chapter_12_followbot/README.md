@@ -127,6 +127,8 @@ rosrun followbot follower_p.py
 This is a (modified) summary of the steps we followed in class to create a two-line course.
 - We used `GIMP` to edit the `course.png` file...those steps are not repeated here.
 
+**NOTE: This repo already contains the modified files (`course_duo.launch`, `course_duo.world`, `course_duo.material`, and `course_duo.png`).  The steps below describe how to create those files.**
+
 1. First, change directories to where our worlds are saved:
     ```
     cd ~/catkin_ws/src/followbot/worlds
