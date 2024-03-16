@@ -11,7 +11,7 @@ We will assume that you have cloned the course GitHub respository to `~/Projects
 
 1.  Create the `followbot` package:
     ```
-    cd catkin_ws/src
+    cd ~/catkin_ws/src
     catkin_create_pkg followbot
     ```
 
