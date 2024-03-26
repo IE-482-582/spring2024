@@ -289,3 +289,358 @@ We will start by controlling our Husky, but these navigation tools are more broa
 
 
 --- 
+
+
+## 6 - Building a ROS Package
+In this lesson we will build our own ROS package.  
+
+Why do we need to create a package?  Why not just run our Python scripts from some random directory?
+1. Packages are a nice way to organize your code, especially if you're working on a project.
+2. If you want to create customized topics or services, you'll need to create a package.
+
+To get a better understanding of how to build a package, we're going to create a project for a collection of turtlebots, each with a unique ID.  The turtlebots will be looking for aruco tags.  When they find one, they will report the tag ID and the location of the tag.  The message will carry this information:
+- The ID of each turtlebot.  We'll call this `robotID`.  It will be an integer.
+- The ID of each discovered aruco tag.  Each tag has an integer ID.  There might be several tags discovered at once.
+- The location of each aruco tag (`x`, `y`, and `z` floating point coordinates).
+
+There is not an existing ROS message definition that has these fields.
+
+Let's build our package, which we'll call `turtletag`.  
+
+### 1.  Create the Package
+```
+cd ~/catkin_ws/src
+catkin_create_pkg turtletag
+```
+
+- This will create the `~/catkin_ws/src/turtletag` directory, which will be pre-populated with 2 files:  `CMakeLists.txt` and `package.xml`
+    - We'll come back to these files shortly.
+    
+
+### 2.  Structure/Organize the Package
+We'll create some directories to help keep our code organized:
+```
+cd ~/catkin_ws/src/turtletag
+mkdir scripts    # Where our Python code (nodes) will go
+mkdir msg        # Where we'll save our custom message definitions
+mkdir launch     # Where we'll save .launch files
+```
+- If we had custom services, we'd also run `mkdir srv`.
+    
+### 3.  Create our Custom Message Definition
+
+We will name our tag-locating message `tagloc.msg`.  It will be saved as `~/catkin_ws/src/turtletag/msg/tagloc.msg`.  Let's open a text editor to create the message:
+```
+cd ~/catkin_ws/src/turtletag/msg
+pico tagloc.msg
+```
+
+In the text editor, write the following:
+```
+int32 robotID
+int32 tagID
+geometry_msgs/Point position
+```
+
+- See https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/Point.html.  You can find `Point.msg` if you run `roscd geometry_msgs/msg`.
+- `geometry_msgs/Point` has this structure:
+    ```
+    # This contains the position of a point in free space
+    float64 x
+    float64 y
+    float64 z
+    ```
+
+### 4. Finish Configuring our Package
+There are two files that we need to edit:
+#### `package.xml`
+Run `pico ~/catkin_ws/src/turtletag/package.xml`
+
+Scroll down to where you see the `<buildtool_depend>catkin</buildtool_depend>` line.  Paste the following after that line:
+
+```
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <build_export_depend>message_generation</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
+```
+
+
+#### `CMakeLists.txt`
+You'll need to follow these instructions **very carefully**.  There are many sections of the file that look quite similar.  Make sure things match **exactly**.
+
+1.  Find the line that reads `find_package(catkin REQUIRED)`  (**exactly like this**), and replace it as follows:
+    ```
+    find_package(catkin REQUIRED COMPONENTS
+      roscpp
+      rospy
+      std_msgs
+      geometry_msgs
+      message_generation
+    )
+    ```
+    
+2.  Find the block that reads **exactly** as:
+    ```
+    # add_message_files(
+    #   FILES
+    #   Message1.msg
+    #   Message2.msg
+    # )
+    ```
+
+    Replace this block with:
+
+    ```
+    add_message_files(
+      FILES
+      tagloc.msg
+    )
+    ```
+    
+3.  Find the block that reads **exactly** as:
+    ```
+    # generate_messages(
+    #   DEPENDENCIES
+    #   std_msgs  # Or other packages containing msgs
+    # )
+    ```
+
+    Replace this block with:
+
+    ```
+    generate_messages(
+      DEPENDENCIES
+      std_msgs
+      geometry_msgs
+    )
+    ```        
+    
+4.  Find the block that reads **exactly** as:   
+    ```
+    catkin_package(
+    #  INCLUDE_DIRS include
+    #  LIBRARIES turtletag
+    #  CATKIN_DEPENDS other_catkin_pkg
+    #  DEPENDS system_lib
+    )
+    ```
+
+    Replace this block with:
+
+    ```
+    catkin_package(
+    #  INCLUDE_DIRS include
+    #  LIBRARIES gcs
+       CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs message_runtime
+    #  DEPENDS system_lib
+    )
+    ```
+    
+5.  Find the block that reads **exactly** as:   
+    ```
+    include_directories(
+    # include
+    # ${catkin_INCLUDE_DIRS}
+    )
+    ```
+
+    Replace this block with:
+
+    ```
+    include_directories(
+      ${catkin_INCLUDE_DIRS}
+    )    
+    ```    
+
+Save the file.
+
+
+### 5. Recompile (make) our Package
+Now we need to compile the package so ROS knows about our custom message definition (and all the other things our package depends on):
+```
+cd ~/catkin_ws
+catkin_make
+```
+
+
+
+### 6.  Testing
+Let's see if we can now generate a `tagloc` message in Python.
+
+First, open a Python terminal:
+```
+python3
+```
+
+Now, type the following:
+```
+from turtletag.msg import tagloc
+
+myMsg = tagloc()
+
+myMsg
+```
+
+You should see
+> ```
+> robotID: 0
+> tagID: 0
+> position: 
+>   x: 0.0
+>   y: 0.0
+>   z: 0.0
+> ```
+
+
+**Summary**:  We covered the steps for creating a ROS package, which was motivated by our need for a message type that doesn't natively exist in ROS.
+
+
+### Further Reading
+- https://wiki.ros.org/ROS/Tutorials/CreatingPackage
+    - https://wiki.ros.org/catkin/CMakeLists.txt
+- https://wiki.ros.org/ROS/Tutorials/BuildingPackages
+- See Chapter 3
+- https://wiki.ros.org/msg
+
+--
+
+## 7 - An intro to launch files
+
+"Launch Files" provide an organized way of starting `roscore`, Gazebo, and multiple nodes simultaneously.  They provide a nice alternative to the process of opening a separate terminal window for each ROS-related command.
+
+Here's an example where we use a launch file to
+- Start a Gazebo world;
+- Spawn 2 turtlebot robots; and
+- Start a Python node.
+
+Save the following as `~/catkin_ws/src/turtletag/launch/demo.launch`:
+
+```
+<?xml version="1.0"?>
+<launch>
+  <arg name="gui" default="true" doc="Show GUI? [true, false]"/>
+  <arg name="headless" default="false" doc="Headless? [true, false]"/>  <!-- I don't think this actually does anything -->
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+	<arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_autorace.world"/>
+				  	
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="debug" value="false"/>
+  </include>
+  
+  <arg name="first_tb3"       default="tb3_1"/>  <!-- Each name must be unique -->
+  <arg name="first_tb3_model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="first_tb3_x"     default=" 0.656"/>
+  <arg name="first_tb3_y"     default=" 1.572"/>
+  <arg name="first_tb3_z"     default=" 0.0"/>
+  <arg name="first_tb3_yaw"   default="-1.57"/>
+  <arg name="first_tb3_cam"   default="$(arg first_tb3)/camera/rgb/image_raw"/>
+
+  <arg name="second_tb3"       default="tb3_2"/>  <!-- Each name must be unique -->
+  <arg name="second_tb3_model" value="burger"/>   <!-- Here we'll just hard-code the model type -->  
+  <arg name="second_tb3_x"     default=" 1.159"/>
+  <arg name="second_tb3_y"     default=" 1.524"/>
+  <arg name="second_tb3_z"     default=" 0.0"/>
+  <arg name="second_tb3_yaw"   default="-1.57"/>
+  <arg name="second_tb3_cam"   default="$(arg second_tb3)/camera/rgb/image_raw"/>
+  
+  
+  <group ns = "$(arg first_tb3)">
+    <param name="robot_description" 
+     command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg first_tb3_model).urdf.xacro" />
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg first_tb3)" />
+    </node>
+
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" 
+     args="-urdf -model $(arg first_tb3) -x $(arg first_tb3_x) -y $(arg first_tb3_y) -z $(arg first_tb3_z) -Y  $(arg first_tb3_yaw) -param robot_description" />
+  </group>
+
+  <group ns = "$(arg second_tb3)">
+    <param name="robot_description" 
+    command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg second_tb3_model).urdf.xacro" />
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" type="double" value="50.0" />
+      <param name="tf_prefix" value="$(arg second_tb3)" />
+    </node>
+
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg second_tb3) -x $(arg second_tb3_x) -y $(arg second_tb3_y) -z $(arg second_tb3_z) -Y $(arg second_tb3_yaw) -param robot_description" />
+  </group>
+  
+  <node name="view_camera_first_tb3" pkg="followbot" type="view_camera.py" respawn="false">
+		<param name="camTopic" value="$(arg first_tb3_cam)" />
+  </node>
+
+  <node name="view_camera_second_tb3" pkg="followbot" type="view_camera.py" respawn="false">
+		<param name="camTopic" value="$(arg second_tb3_cam)" />
+  </node>
+
+</launch>
+```
+
+Run this as
+```
+roslaunch turtletag demo.launch
+```
+
+
+### Resources
+- Install the `ub_gazebo` package:  https://github.com/optimatorlab/ub_gazebo
+
+- https://wiki.ros.org/roslaunch
+    - https://wiki.ros.org/roslaunch/XML
+    - https://wiki.ros.org/roslaunch/XML/node
+- http://www.clearpathrobotics.com/assets/guides/noetic/ros/Launch%20Files.html
+- https://wiki.ros.org/ROS/Tutorials/UsingRqtconsoleRoslaunch
+    - https://wiki.ros.org/ROS/Tutorials/Roslaunch%20tips%20for%20larger%20projects
+- A nice example here, launching a python node:
+    - https://github.com/duckietown/dt-core/blob/daffy/packages/apriltag/launch/apriltag_detector_node.launch
+
+--- 
+
+## 8 - Gazebo Worlds 
+- https://classic.gazebosim.org/tutorials?tut=ros_roslaunch
+
+- http://wiki.ros.org/urdf/Tutorials
+- https://classic.gazebosim.org/tutorials?tut=model_editor&cat=model_editor_top#Savingyourmodel
+
+There are other worlds already available on your machine:
+```
+cd /usr/share/gazebo-11/worlds
+```
+
+---
+
+## 9 - URDF and SDF 
+TODO
+
+---
+
+## 10 - `roslibjs`
+TODO
+
+---
+
+## 11 - Moving Models in Gazebo/Python
+TODO
+
+--- 
+
+## 12 - Other Robots
+TODO
+
+---
+
+## 13 - Fun with Computer Vision
+TODO
+
