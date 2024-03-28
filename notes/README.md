@@ -506,7 +506,7 @@ You should see
 - See Chapter 3
 - https://wiki.ros.org/msg
 
---
+---
 
 ## 7 - An intro to launch files
 
@@ -606,41 +606,685 @@ roslaunch turtletag demo.launch
 - A nice example here, launching a python node:
     - https://github.com/duckietown/dt-core/blob/daffy/packages/apriltag/launch/apriltag_detector_node.launch
 
+### Exercises
+1.  Change `demo.launch` to spawn a different world that is already on your computer.
+    - See `/usr/share/gazebo-11/worlds` or `roscd husky_gazebo/worlds/`
+2.  Launch Gazebo without the Gazebo GUI.  This is sometimes called "headless", although the `headless` arg in the launchfile is deprecated.
+3.  Create a simple ROS node that simply publishes a text string (`std_msgs/String`) at a rate of 1Hz.  Then, modify `demo.launch` to start your node.
+    - Use `rostopic echo <your topic name>` to verify that your node is running properly.
+
 --- 
 
 ## 8 - Gazebo Worlds 
-- https://classic.gazebosim.org/tutorials?tut=ros_roslaunch
-
-- http://wiki.ros.org/urdf/Tutorials
-- https://classic.gazebosim.org/tutorials?tut=model_editor&cat=model_editor_top#Savingyourmodel
-
-There are other worlds already available on your machine:
+The easiest way to open a Gazebo world is to use the `gazebo <worldname>` command (replacing `<worldname>` with the name of an actual `.world` file).  For example:
 ```
-cd /usr/share/gazebo-11/worlds
+gazebo worlds/simple_arm.world
 ```
 
----
+When you run the `gazebo` command, Gazebo will search for worlds found in your `GAZEBO_RESOURCE_PATH` environment variable.  What's in that?
+```
+echo $GAZEBO_RESOURCE_PATH
+```
 
-## 9 - URDF and SDF 
-TODO
+There are several worlds already available on your machine:
+- `cd /usr/share/gazebo-11/worlds`
+- `cd ~/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/worlds` 
+- `roscd husky_gazebo/worlds/`
 
----
 
-## 10 - `roslibjs`
-TODO
-
----
-
-## 11 - Moving Models in Gazebo/Python
-TODO
+You may also find some resources online.  For example:
+- https://app.gazebosim.org/fuel/worlds  
+    - **Do these work with Gazebo "classic"?** If so, this is an amazing resource.
+- https://docs.px4.io/main/en/sim_gazebo_classic/worlds.html
 
 --- 
 
-## 12 - Other Robots
-TODO
+Another common way of opening a Gazebo world is with a `.launch` file.   
+
+- There are several launch files pre-installed with `gazebo_ros`:
+    ```
+    roscd gazebo_ros/launch
+    ```
+- If you have `turtlebot3_gazebo` installed:
+    ```
+    roscd turtlebot3_gazebo/launch
+    ```
+- If you have `husky_gazebo` installed:
+    ```
+    roscd husky_gazebo/launch
+    ```
+    
+If you open any of the `.launch` files found above, you'll see that they reference one or more `.world` files.
+- NOTE: The above `.launch` files are for use with Gazebo (note the package names).
+- Not all ROS `.launch` files spawn Gazebo, though.
+    - If you have a ROS-enabled real/physical robot, it likely uses a `.launch` file to start its various nodes, but it won't have any need for Gazebo.
+- `.launch` files are particularly useful if you're trying to spawn one or more robots, or to start one or more ROS nodes.
+    - If you're simply starting a Gazebo world, the `gazebo <worldname>` is going to be your best option.
+
+
+### Building your own world
+This tutorial provides an introduction into creating a world within Gazebo:
+- https://classic.gazebosim.org/tutorials?tut=build_world
+
+The resulting world is a `.sdf` file; you may change its extension to `.world` after saving.
+
+
+### Resources
+- https://classic.gazebosim.org/tutorials?tut=components
+- https://classic.gazebosim.org/tutorials?tut=ros_roslaunch
+- http://wiki.ros.org/urdf/Tutorials
+- https://classic.gazebosim.org/tutorials?tut=model_editor&cat=model_editor_top#Savingyourmodel
+
+### Exercises
+1.  Spawn an existing world (other than what we did above) that is already on your computer.
+2.  Spawn a world (any world except those in the `husky_gazebo` package) with a Husky in it.
+3.  Spawn a world (any world except those in the `turtlebot3_gazebo` package) with a turtlebot in it.
+4.  (group exercise) Create a world of 427 Bell.
+    - [ ] Use floorplan to get wall locations
+    - [ ] Shiny black tiles
+    - [ ] Windows
+    - [ ] Lights and ceiling tiles
+    - [ ] Tables
+    - [ ] Chairs
+    - [ ] UR5 robot on pedastal
+    - [ ] ...
+    
+---
+
+## 9 - URDF and SDF 
+URDF is the "universal robotic description format".  A URDF file of a robot can describe the location of onboard sensors, the size of the robot's wheelbase, the radius of its wheels, the inertia of its arms, and the joints between its component parts. 
+The URDF file can be used by Gazebo for simulated robots, but is also useful on real robots.  
+
+URDF files are often combined with ROS's "xacro" macro language, which can reduce filesizes and make it easier to customize/parameterize robot characteristics.
+
+The "simulation description format" (SDF) is the current preferred way of modeling objects (like tables, walls, trees, etc., as opposed to robots) in simulation.  An SDF file of an object will describe its visual properties, the volume of the object that will interact with other objects in a "collision", the material of the object, links and joints, and friction.
+
+Both URDF and SDF use XML syntax.  
+
+### Example 1 - Turtlebot
+
+Let's see how URDF files are used with a simulated turtlebot3:
+
+```
+roscd turtlebot3_gazebo
+cd launch
+pico turtlebot3_world.launch
+```
+
+```
+<launch>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="x_pos" default="-2.0"/>
+  <arg name="y_pos" default="-0.5"/>
+  <arg name="z_pos" default="0.0"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_world.world"/>
+	<!-- removed some stuff to save space -->
+  </include>
+
+  <param name="robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf"  args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
+</launch>
+```
+
+Assuming that we have chosen the `waffle` model:
+```
+roscd turtlebot3_description/urdf
+pico turtlebot3_waffle.urdf.xacro
+```
+
+Notice all of the details that are modeled.  Check out `common_properties.xacro` and `turtlebot3_waffle.gazebo.xacro`, too.
+
+There are also 3D models (`.stl` and `.dae` files) that are used for both the visual and collision components.
+
+
+### Example 2 - Husky
+
+Now, let's do the same exercise with our Husky.
+
+```
+roscd husky_gazebo
+cd launch
+```
+
+We'll trace the sub-files that are called when we launch a Husky in Gazebo:
+
+- `husky_playpen.launch`
+	- `$(find husky_gazebo)/launch/playpen.launch`
+	- `$(find husky_gazebo)/launch/spawn_husky.launch`  (here is where we actually spawn the model in Gazebo)
+	    - `$(find husky_control)/launch/control.launch` 
+	        - Lots of other stuff happening here, numerous nodes launched. 
+	        - `$(find husky_description)/launch/description.launch`
+                ```
+                <launch>
+                  <arg name="robot_namespace" default="/"/>
+                  <param name="robot_description" command="$(find xacro)/xacro '$(find husky_description)/urdf/husky.urdf.xacro'
+                    robot_namespace:=$(arg robot_namespace)" />
+                </launch>
+                ```
+	    - `$(find husky_control)/launch/teleop.launch`
+	        - Launches keyboard and joystick nodes.
+	    - `$(find husky_gazebo)/launch/realsense.launch`
+	        - `<node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="realsense_to_laserscan" output="screen">`
+
+
+Now, let's examine the `husky.urdf.xacro` file:
+```
+roscd husky_description
+cd urdf
+pico husky.urdf.xacro
+```
+
+### Resources
+- Textbook Chapter 16
+- https://classic.gazebosim.org/tutorials?tut=ros_urdf&cat=connect_ros
+- https://wiki.ros.org/urdf/Tutorials
+- https://wiki.ros.org/urdf
+    - https://wiki.ros.org/xacro
+- http://sdformat.org/
+
+### Exercises
+1.  Complete the "Learning URDF Step by Step" tutorial found at https://wiki.ros.org/urdf/Tutorials
+2.  Create a Gazebo `.sdf` model, given the files found here:  [files/sman.zip](files/sman.zip)
+    - Use this model as an example: [files/fire_hydrant.zip](files/fire_hydrant.zip)
+3.  Create a Gazebo `.sdf` model from your own `.stl`, `.dae`, or `.obj` creation.
 
 ---
 
-## 13 - Fun with Computer Vision
+## 10 - Adding/Deleting/Moving Models in Gazebo
+
+We will look at some of the ways to add model objects (like dumpsters, cubes, humans) to a Gazebo world.  
+- Please see above if you're looking to add one or more **robots**.  
+
+The notes below contain numerous references to material from https://classic.gazebosim.org/tutorials?tut=ros_comm#Tutorial:ROSCommunication.
+
+
+Let's begin by starting Gazebo with an empty world:
+```
+roslaunch gazebo_ros empty_world.launch
+```
+
+### What is a "model"?
+- Take a look at https://classic.gazebosim.org/tutorials?tut=model_structure&cat=build_robot for info on how a "model database" is structured.
+
+    > A model database must abide by a specific directory and file structure. The root of a model database contains one directory for each model, and a database.config file with information about the model database. Each model directory also has a model.config file that contains meta data about the model. A model directory also contains the SDF for the model and any materials, meshes, and plugins.
+    > 
+    > The structure is as follows (in this example the database has only one model called model_1):
+    > 
+    > - *Database*
+    >     - *database.config* : Meta data about the database. This is now populated automatically from `CMakeLists.txt`
+    >     - *model_1* : A directory for `model_1`
+    >         - *model.config* : Meta-data about `model_1`
+    >         - *model.sdf* : SDF description of the model
+    >         - *model.sdf.erb* : Ruby embedded SDF model description
+    >         - *meshes* : A directory for all COLLADA and STL files
+    >         - *materials* : A directory which should only contain the `textures` and `scripts` subdirectories
+    >             - *textures* : A directory for image files (jpg, png, etc).
+    >             - *scripts* : A directory for OGRE material scripts
+    >         - *plugins* : A directory for plugin source and header files
+     
+- Lots of models are available at https://github.com/osrf/gazebo_models.  You can even clone the repo if you like.
+
+Let's look at two example models:
+- `beer` https://github.com/osrf/gazebo_models/tree/master/beer
+- `bus` https://github.com/osrf/gazebo_models/tree/master/bus
+
+
+### Add a Model
+We are looking to add a model to an existing Gazebo world that is already running.  If you already know you want one or more models in your world at launch time, your best option is to simply include those models in your `.world` file.  For example, see:
+- `/opt/ros/noetic/share/husky_gazebo/worlds/clearpath_playpen.world`;
+- Most of the worlds in `/usr/share/gazebo-11/worlds`.
+
+
+Note that the paths where Gazebo searches for models are saved in the `GAZEBO_MODEL_PATH` variable.  Try:
+```
+echo $GAZEBO_MODEL_PATH
+````
+- If you need to add a path to this variable, the best option is to edit your `~/.bashrc` file.  Mine has the following lines (just as examples...you might not have these particular paths on your system):
+    ```
+    export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/PX4-Autopilot/Tools/sitl_gazebo/models
+    export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/ub_gazebo/models
+    ```     
+
+1. **Via Gazebo GUI**.  Click the "Insert" tab on the left side and choose a model.  If you have models saved on your computer but they don't appear in the list, click the "Add Path" button.
+    - NOTE:  The models in the `https://fuel.gazebosim.org` seem to work well in Gazebo Classic.
+        - However, I'm unable to insert any models from the `https://fuel.ignitionrobitics.org` list within the Gazebo GUI.  Perhaps these can be added manually?
+
+2. **Via `rosrun gazebo_ros spawn_model`**
+    - First, let's find a model on your system:
+        ```
+        ls ~/.gazebo/models
+        ```
+        - In this example, I found a `beer` directory, which contains a `.sdf` model.
+
+    - Now, we'll add this model to our Gazebo world:
+    ```
+    rosrun gazebo_ros spawn_model -file ~/.gazebo/models/beer/model.sdf -sdf -model beer_1 -y 0.2 -x -0.3
+    ```
+    - The model name (in this case, `beer_1`) must be unique.
+        
+    - To see all of the `spawn_model` options, type `rosrun gazebo_ros spawn_model -h`
+    
+3. **Via `ub_gazebo` package**
+    - See https://github.com/optimatorlab/ub_gazebo?tab=readme-ov-file#adding-objectsmodels-not-robots-to-gazebo
+
+
+#### Example - Make it Snow
+This Python script will produce 100 small white cubes that fall from the sky in Gazebo.  It uses the [`ub_gazebo`](https://github.com/optimatorlab/ub_gazebo) package.
+
+```
+import rospy
+import model_launcher as ml
+import numpy as np
+
+rospy.init_node('myNode', anonymous=True)
+
+# Initialize a dictionary for all of our models/objects
+objects = {}
+
+
+for i in range(0,100):
+	# Our "snow" will be tiny white boxes (more like falling ice cubes).
+	# ----------------------------------------------------------
+	# TODO: Randomize the size and origin location of each box.
+	# ----------------------------------------------------------	
+	dim = 0.005
+	args = { 'color_r': 1.0, 'color_g': 1.0, 'color_b': 1.0,
+			 'dim_x': dim, 'dim_y': dim, 'dim_z': dim, 
+			 'useGravity': True}
+
+	objects[f'box{i}'] = ml.launcher(objectType = 'box', 
+						 gazeboModelName = f'box{i}',
+						 namespace = 'snow', 
+						 modelYawOffsetRad = 0,					  
+						 x = 0, y = 0, z = 14, 
+						 rollRad = 0, pitchRad = 0, yawRad = 0, 
+						 args=args)	
+```
+
+
+
+### Get Model State/Position and Properties
+1. **Via Gazebo GUI**.
+    - Select the model from the "World" tab on the left side of the GUI.  You may need to expand the "Models" list.
+    - On the bottom portion of the left-hand panel, expand the "Pose" section, which will reveal the position and orientation.
+    
+2. **Via `rosservice call gazebo/delete_model`**
+    - First, let's see what models we have available:
+        ```
+        rostopic echo -n 1 /gazebo/model_states
+        ```
+        > ```
+        > name:
+        >   - ground_plane
+        >   - beer_1
+        > ```
+        
+    - We could also examine the overall Gazebo world properties:
+        ```
+        rosservice call gazebo/get_world_properties
+        ```
+        
+        This returns
+        > ```
+        > sim_time: 46.226
+        > model_names: 
+        >   - ground_plane
+        >   - beer_1
+        > rendering_enabled: True
+        > success: True
+        > status_message: "GetWorldProperties: got properties"
+        > ```        
+        
+    - Now, get the "state" of the `beer_1` model:
+        ```
+        rosservice call gazebo/get_model_state '{model_name: beer_1}'
+        ```
+        
+        This returns
+        > ```
+        > header: 
+        >   seq: 1
+        >   stamp: 
+        >     secs: 6189
+        >     nsecs: 711000000
+        >   frame_id: ''
+        > pose: 
+        >   position: 
+        >     x: -0.3000000096127953
+        >     y: 0.1999999479047525
+        >     z: -2.182911401693577e-06
+        >   orientation: 
+        >     x: 4.7499127773985604e-07
+        >     y: 2.065120920971766e-08
+        >     z: -6.72754543001391e-07
+        >     w: 0.9999999999996607
+        > twist: 
+        >   linear: 
+        >     x: 0.0
+        >     y: 0.0
+        >     z: 0.0
+        >   angular: 
+        >     x: 0.0
+        >     y: 0.0
+        >     z: 0.0
+        > success: True
+        > status_message: "GetModelState: got properties"
+        > ```
+
+    - Finally, get the "properties" of the `beer_1` model:
+        ```
+        rosservice call gazebo/get_model_properties '{model_name: beer_1}'
+        ```
+        
+        The beer can is pretty boring:
+        > ```
+        > parent_model_name: ''
+        > canonical_body_name: ''
+        > body_names: 
+        >   - link
+        > geom_names: 
+        >   - collision
+        > joint_names: []
+        > child_model_names: []
+        > is_static: False
+        > success: True
+        > status_message: "GetModelProperties: got properties"
+        > ```        
+        
+3. **Via `ub_gazebo` package**
+    - This functionality isn't available yet, but will be simply a matter of implementing the `rosservice` call described above.
+
+
+
+### Moving a Model
+
+1. **Via Gazebo GUI**.
+    - Enter the "selection mode" by pressing the "Esc" key or clicking the arrow icon at the top of the window.
+    - Click on the model you wish to move.
+        - Enter "translation mode" by pressing "T" or clicking the crosshairs icon at the top.
+        - Enter "rotation model" by pressing "R" or clicking the circular icon at the top.
+   
+2. **Via `gazebo/set_model_state` service**
+    ```
+    rosservice call /gazebo/set_model_state '{model_state: { model_name: beer_1, pose: { position: { x: 0, y: 0 ,z: 2 }, orientation: {x: 0, y: 0, z: 0, w: 0 } }, twist: { linear: {x: 0.0 , y: 0 ,z: 0 } , angular: { x: 0.0 , y: 0 , z: 0.0 } } , reference_frame: world } }'
+    ```
+
+3. **Via `gazebo/set_model_state` topic**
+    This has the advantage of working more quickly, as it doesn't need to wait for a response from the service. 
+
+    ```
+    rostopic pub -r 20 /gazebo/set_model_state gazebo_msgs/ModelState '{model_name: beer_1, pose: { position: { x: 1, y: 1, z: 2 }, orientation: {x: 0, y: 0, z: 0, w: 0 } }, twist: { linear: { x: 0, y: 0, z: 0 }, angular: { x: 0, y: 0, z: 0}  }, reference_frame: world }' 
+    ```
+    
+    Here, `-r 20` sets the publication rate at 20 Hz.  Note what happens to the beer can when you stop publishing.
+
+
+4. **Via `ub_gazebo` package**
+    - This functionality isn't available yet, but will be a matter of publishing to the `/gazebo/set_model_state` topic described above.
+
+5. You can also set trajectories for your model to follow when spawning from a `.world` file.  See `/usr/share/gazebo-11/worlds/actor.world`:
+    ```
+         <actor name="actor">
+             <skin>
+                <filename>file://media/models/walk.dae</filename>
+                <scale>1.0</scale>
+             </skin>
+             <pose>0 0 0 0 0 0</pose>
+             <animation name="walking">
+                <filename>file://media/models/walk.dae</filename>
+                <scale>1.000000</scale>
+                <interpolate_x>true</interpolate_x>
+             </animation>
+             <script>
+                <loop>true</loop>
+                <delay_start>0.000000</delay_start>
+                <auto_start>true</auto_start>
+                <trajectory id="0" type="walking">
+                   <waypoint>
+                      <time>0.000000</time>
+                      <pose>0.000000 1.000000 0.000000 0.000000 0.000000 0.000000</pose>
+                   </waypoint>
+                   <waypoint>
+                      <time>0.500000</time>
+                      <pose>0.195090 0.980785 0.000000 0.000000 0.000000 -0.196350</pose>
+                   </waypoint>
+                   <waypoint>
+                      <time>1.000000</time>
+                      <pose>0.382683 0.923880 0.000000 0.000000 0.000000 -0.392699</pose>
+                   </waypoint>
+                </trajectory>
+             </script>
+          </actor>
+    ```
+
+
+### Deleting a Model
+1. **Via Gazebo GUI**.
+    - Select the model from the "World" tab on the left side of the GUI.  You may need to expand the "Models" list.
+    - Right click on the name of the model you wish to delete and choose "Delete".
+
+2. **Via `gazebo/spawn_sdf_model` service**
+    We'll say goodbye to our `beer_1` model:
+    ```
+    rosservice call gazebo/delete_model '{model_name: beer_1}'
+    ```
+    
+3. **Via `ub_gazebo` package**
+    - See https://github.com/optimatorlab/ub_gazebo?tab=readme-ov-file#adding-objectsmodels-not-robots-to-gazebo
+
+
+### Resources
+- https://classic.gazebosim.org/tutorials?tut=ros_comm#Tutorial:ROSCommunication
+- https://answers.gazebosim.org//question/5553/how-does-one-use-gazebospawn_sdf_model/
+- https://classic.gazebosim.org/tutorials?tut=ros_comm
+- https://answers.ros.org/question/375645/using-modelstates-and-twist-to-move-model/
+- https://classic.gazebosim.org/tutorials?tut=ros_comm#Services:Stateandpropertygetters
+- https://answers.ros.org/question/9783/programmatically-get-modelstate-from-gazebo/
+- https://answers.ros.org/question/261782/how-to-use-getmodelstate-service-from-gazebo-in-python/
+- https://gazebosim.org/api/gazebo/3.7/migrationsdf.html
+
+
+### Exercises
+1.  Add a model from within the Gazebo GUI.
+2.  Add a model using `rosrun gazebo_ros spawn_model`.   Rotate the model by 45 degrees about the z axis (yaw), and by 90 degrees about the x axis (roll)
+3.  Add some "snow" to gazebo, then spawn a Husky in the world.  Drive the Husky through the "snow".  
+    - List all of the ways that you can make the Husky move. 
+  
+
+--- 
+
+## 11 - `roslibjs` (ROS + JavaScript/HTML)
+`roslibjs` is the ROS JavaScript library.  It allows webpages to communicate with ROS.  For example, the webpage can 
+- subscribe to topics, and publish messages;
+- call a service (I don't believe that hosting the service is supported)
+
+Example code is available on the `roslibjs` wiki (https://wiki.ros.org/roslibjs) and on the `roslibjs` GitHub site (https://github.com/RobotWebTools/roslibjs/tree/develop/examples).
+
+The [`ub_web`](https://github.com/optimatorlab/ub_web) package makes use of `roslibjs` to provide web-based monitoring and control of robots. 
+
+Visit https://github.com/optimatorlab/ub_web to get started.
+
+![image](https://github.com/optimatorlab/ub_web/assets/18486796/2fc5222f-4ca8-4c0c-aaad-3043c5e6d339)
+
+
+### Resources
+- https://wiki.ros.org/roslibjs
+- https://github.com/RobotWebTools/roslibjs/tree/develop/examples
+- https://github.com/optimatorlab/ub_web
+
+### Exercises
+1.  Read thru the tutorials at https://wiki.ros.org/roslibjs
+2.  Complete the "Basic ROS Functionality" tutorial (https://wiki.ros.org/roslibjs/Tutorials/BasicRosFunctionality)
+3.  (in-class) Try to get this one to work: https://wiki.ros.org/roslibjs/Tutorials/Publishing%20video%20and%20IMU%20data%20with%20roslibjs
+
+--- 
+
+## 12 - Other robots
+
+- Spot
+    - See https://github.com/chvmp/champ
+    - See https://taras-borovets.medium.com/simulation-tools-for-boston-dynamics-spot-28a10d88e325
+
+Iris? Clover?  PX4-based.
+- https://dev.px4.io/v1.11_noredirect/en/simulation/ros_interface.html
+- https://github.com/CopterExpress/clover/tree/master/clover
+
+Robot arm
+- ur5
+    - https://sir.upc.edu/projects/rostutorials/final_work/index.html
+    - https://app.gazebosim.org/anni/fuel/models/ur5_rg2.  Does this work?
+
+- MoveIt!
+    - https://ros-planning.github.io/moveit_tutorials/doc/getting_started/getting_started.html
+
+NASA JPL Open Source Rover Project
+- https://github.com/nasa-jpl/open-source-rover
+
+DiffBot 2-wheeled differential drive robot 
+- https://github.com/ros-mobile-robots/diffbot
+
+Ubiquity Robotics "Magni" cart
+- https://learn.ubiquityrobotics.com/noetic_quick_start_ros101
+
+### Exercises
+1. (in class) Install Gazebo simulation packages for these robots.
+
+---
+
+## 13 - Autonomous Navigation
 TODO
 
+### Nav Stack
+Husky
+- Move Base:  https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyMove.html
+- AMCL: https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyAMCL.html
+- Gmapping: https://www.clearpathrobotics.com/assets/guides/noetic/husky/HuskyGmapping.html
+
+- http://wiki.ros.org/move_base
+- http://wiki.ros.org/amcl
+- http://wiki.ros.org/gmapping 
+- http://wiki.ros.org/navigation
+- http://wiki.ros.org/navigation/Tutorials **CHECK THIS OUT**
+
+
+### SLAM
+
+See diffbot 
+- https://github.com/ros-mobile-robots/diffbot
+- https://github.com/ros-mobile-robots/diffbot/tree/noetic-devel
+
+http://www.ros.org/wiki/slam_gmapping
+http://wiki.ros.org/hector_slam
+
+### Move_Base
+https://answers.ros.org/question/390968/sending-goals-to-the-navigation-stack-help/?answer=390972
+https://www.google.com/search?q=ros+actionlib+python+move+base+goal&client=ubuntu-chr&hs=ruz&sca_esv=589713028&ei=uLx2ZaTRNoPaptQPg66fuAQ&oq=ros+actionlib+python+mov&gs_lp=Egxnd3Mtd2l6LXNlcnAiGHJvcyBhY3Rpb25saWIgcHl0aG9uIG1vdioCCAUyBRAhGKABMgUQIRigATIFECEYoAEyBRAhGKABMggQIRgWGB4YHTIIECEYFhgeGB0yCBAhGBYYHhgdMggQIRgWGB4YHUiTQFDrA1iIFnABeAGQAQCYAWagAcgCqgEDMy4xuAEDyAEA-AEBwgIKEAAYRxjWBBiwA8ICBhAAGBYYHsICCxAAGIAEGIoFGIYDwgIFECEYqwLiAwQYACBBiAYBkAYI&sclient=gws-wiz-serp
+https://answers.ros.org/question/252220/sending-goals-to-the-navigation-stack/
+https://get-help.robotigniteacademy.com/t/naviagation-goal-through-command-terminal/20519/2
+https://learn.ubiquityrobotics.com/python_script_1
+
+```
+*******************************
+See `robot_localization`.
+Look at emails I sent to myself on Jan 8/9
+*******************************
+```
+
+### Exercises
+1. How to specify goal in Python?
+
+---
+
+## 14 - Sensors and Other Input Sources
+TODO 
+
+- Sonar
+- IMU
+- GPS
+- Stereo Cameras (Fernandez p. 202)
+- RealSense
+- Wii peripherals
+
+### Exercises
+1. Time of Flight sensor
+    - Let's use `rqt_multiplot` to view our VL53L1X data.  Maybe partitioned into zones?
+    - Given a topic name and data type, what ways can you think of to view this data?  matplotlib?
+    - http://wiki.ros.org/Drivers/Tutorials/DistanceMeasurementWithToFSensorVL53L1XPython
+2. Avoid obstacles using RealSense
+3. Control robots with Wii peripherals
+
+
+---
+
+## 15 - More fun with Computer Vision
+TODO 
+
+- Finish line following exercise (and implement on Husky)
+
+- AR Toolkit, Object Recognition, Visual Odometry (Fernandez p. 214)
+
+- https://docs.opencv.org/4.x/d7/d53/tutorial_py_pose.html
+    - Pose Estimation
+    - Draw 3D objects on an image
+
+- Computer vision hand movement?
+    - https://pyimagesearch.com/2015/05/25/basic-motion-detection-and-tracking-with-python-and-opencv/ 
+	
+- ArUco tags
+    - See https://docs.ros.org/en/noetic/api/visualization_msgs/html/msg/Marker.html 
+    - https://wiki.ros.org/fiducials
+    - Localize drone/rover from known tag locations
+	    
+- barcodes
+
+- How to do stereo vision?  Can we get depth?
+    - See Fernandez, p. 202
+
+### Exercises
+1.  TBD
+
+--- 
+
+## 16 - Implement things on Real Hardware
+TODO
+
+- Field trip to SOAR
+- Map 4th floor with Husky
+- Play around with SDR?
+
+### Exercises
+1.  TBD
+
+--- 
+
+## 17 - ROS/Gazebo Cheat Sheets
+
+- Spend one class working on the ultimate ROS/Gazebo cheat sheet
+    - Identify any topics we missed.
+    
+### Some things to include (before I forget):
+**ROS**
+Super useful visual tool for viewing topics:
+```
+rqt -s rqt_msg
+```
+
+**Gazebo**
+```
+gazebo worlds/stacks.world
+gzserver worlds/stacks.world / gzclient
+```
+
+List standard worlds:
+```
+ls /usr/share/gazebo-11/worlds/
+ls /opt/ros/noetic/share/husky_gazebo/worlds/
+```
+
+Paths where worlds might be:
+```
+echo $GAZEBO_RESOURCE_PATH    
+```
