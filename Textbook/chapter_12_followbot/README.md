@@ -9,18 +9,39 @@ First, we need to create a ROS "package" for this project.
 
 We will assume that you have cloned the course GitHub respository to `~/Projects/IE-482-582/spring2024`, and that your ROS packages will be installed in `~/catkin_ws/src`.
 
-1.  Create the `followbot` package:
+**UPDATE 2024-03-27:**
+- We are going to use a different approach to sync this code between our GitHub clone of the `followbot` package (located in `~/Projects/IE-482-582/spring2024/chapter_12_followbot`) with our `catkin_ws` package (located in `~/catkin_ws/src/followbot`).
+
+1.  Make a backup copy of your existing `catkin_ws/src/followbot` package (if it exists):
     ```
-    cd ~/catkin_ws/src
-    catkin_create_pkg followbot
+    cp -r ~/catkin_ws/src/followbot/ ~/Desktop/followbotbackup
     ```
 
-2.  Copy files from the GitHub repo to the catkin workspace:
+2.  Delete the old followbot package (if it exists):
     ```
-    cp -r ~/Projects/IE-482-582/spring2024/Textbook/chapter_12_followbot/* ~/catkin_ws/src/followbot/
+    rm -r ~/catkin_ws/src/followbot/
     ```
-
-3.  Re-build the catkin workspace
+    
+3.  Create a "symbolic link" to the files in the GitHub repo:
+    ```
+    ln -s ~/Projects/IE-482-582/spring2024/chapter_12_followbot ~/catkin_ws/src/followbot
+    ```
+    - The pattern for this is `ln -s [path to actual files] [path to where link will be placed]`
+    - *NOTE*: If you try to run the `ln -s ...` command and `~/catkin_ws/src/followbot` already exists, you'll get a `chapter_12_followbot` folder within `~/catkin_ws/src/followbot`.
+        - That's not what you want!
+        
+4.  Double check that the symbolic link worked:
+    ```
+    ls ~/catkin_ws/src/followbot
+    ```
+    It should return
+    > ```
+    > CMakeLists.txt  package.xml  README.md  scripts  worlds
+    > ```
+        
+    If you get something different, go back to Step 2.
+                
+5.  Build the catkin workspace
     ```
     cd ~/catkin_ws
     catkin_make
