@@ -606,6 +606,84 @@ roslaunch turtletag demo.launch
 - A nice example here, launching a python node:
     - https://github.com/duckietown/dt-core/blob/daffy/packages/apriltag/launch/apriltag_detector_node.launch
 
+
+### Summary
+Let's review 3 ways to spawn a robot (e.g., a Husky or Turtlebot3) in an Gazebo world.
+
+#### 1. Use existing `.launch` file and run with default parameter values
+For example, take a look at the launch files found at 
+```
+roscd husky_gazebo/launch
+```
+or 
+```
+roscd turtlebot3_gazebo/launch
+```
+
+You would launch any of these by using this general structure:
+```
+roslaunch <package name> <launchfile name>
+```
+For example:
+```
+roslaunch husky_gazebo empty_world.launch
+```
+
+Advantage:
+- Super simple to do this.  No editing, no copy/pasting, no need to create a new package and/or launch file.
+Disadvantage:
+- No flexibility for customization.  You are going to launch things exactly as they are specified in the launch file.
+
+
+#### 2. Use existing `.launch` file, but change parameter values.
+Like Option 1, but now take a look at the arguments specified in your chosen launch file.
+
+For example, take a look at `/opt/ros/noetic/share/husky_gazebo/launch/empty_world.launch`:
+```
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="world_name" default="worlds/empty.world"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)"/> <!-- world_name is wrt GAZEBO_RESOURCE_PATH environment variable -->
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
+  </include>
+
+</launch>
+```
+
+In this `.launch` file, we have the option of specifying the value of the `world_name` parameter when we call `roslaunch`. 
+Note that the `GAZEBO_RESOURCE_PATH` variable on our system includes `/usr/share/gazebo-11`; continuing along that path, you'll find a directory named `worlds`, which contains numerous worlds.
+Suppose we want to spawn the `mud.world` world.  Then in the terminal we would enter:
+```
+roslaunch husky_gazebo empty_world.launch world_name:=worlds/mud.world
+```
+
+Like the first approach, we do not need to edit any files, nor do we need to make our own package to host a custom launch file.  Unlike the first approach, we can specify which world we want to launch, simply by adding the `world_name:=worlds/<name of world found in a path of GAZEBO_RESOURCE_PATH>` argument.
+Unfortunately, in this `.launch` file, the `world_name` is the only argument whose value we can change from the command line.
+
+#### 3. Create a custom `.launch` file
+This third and final option provides maximum flexibility, but requires some more effort. 
+1.  You will need to create a `.launch` file and save it in a package in `~/catkin_ws/src/`.  
+    - This might require you to create a package (see above in the notes for instructions) if you don't already have one where you wish to store your `.launch` file.
+2.  In the `.launch` file you've created, specify `arg` names, default values, and passed values.  
+    - See https://wiki.ros.org/roslaunch/XML for an explanation of the many options at your disposal.
+    
+Now, you'll launch your world using this structure:
+```
+roslaunch <package name> <.launch file name> <param1>:=<value1> <param2>:=<value2> ... <paramN>:=<valueN>
+```
+
+
+
 ### Exercises
 1.  Change `demo.launch` to spawn a different world that is already on your computer.
     - See `/usr/share/gazebo-11/worlds` or `roscd husky_gazebo/worlds/`
@@ -674,6 +752,7 @@ The resulting world is a `.sdf` file; you may change its extension to `.world` a
 - https://classic.gazebosim.org/tutorials?tut=ros_roslaunch
 - http://wiki.ros.org/urdf/Tutorials
 - https://classic.gazebosim.org/tutorials?tut=model_editor&cat=model_editor_top#Savingyourmodel
+
 
 ### Exercises
 1.  Spawn an existing world (other than what we did above) that is already on your computer.
